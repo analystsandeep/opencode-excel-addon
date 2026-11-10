@@ -1,5 +1,7 @@
 # OpenCode Excel Add-in
 
+Current release v1.2.0
+
 OpenCode for Excel is a local Microsoft Excel add-in for workbook analysis and automation.
 It connects an Office.js task pane to the models configured in OpenCode, sends bounded workbook
 context, and turns model responses into formulas, tables, dashboards, formatting, and reviewable
@@ -19,7 +21,7 @@ one-click launcher without requiring terminal commands.
 - Generate Excel formulas, summaries, variance analysis, scenarios, and dashboard layouts.
 - Review workbook edits before applying them, with exact sheet and range references.
 - Apply values, formulas, formatting, tables, charts, row and column operations, and sheet changes.
-- Restore recent cell writes and single-cell, cell-local formatting with local snapshots; use Excel's own Undo for structural edits.
+- Restore recent cell writes and single-cell, cell-local formatting with local snapshots. Use Excel's own Undo for structural edits.
 - Attach documents, images, spreadsheets, CSV files, and text files through OpenCode V2.
 - Use OpenCode models, agents, skills, MCP connections, and provider settings.
 - Retry unavailable models with a verified free OpenCode fallback without selecting paid providers.
@@ -36,12 +38,35 @@ https://localhost:3000/taskpane.html   ->   https://localhost:3000  ->  127.0.0.
                                             flaky event streams
 ```
 
-Tested against **OpenCode v2** (`/api/*` surface) with automatic fallback to
-**v1** (`/session/*`). Works on **Excel 2019 / 2021 perpetual and Microsoft 365**
-on Windows (Mac desktop works too; Excel *on the web* cannot reach your PC — see
+Tested against OpenCode v2 (`/api/*` surface) with automatic fallback to
+v1 (`/session/*`). Works on Excel 2019 / 2021 perpetual and Microsoft 365
+on Windows (Mac desktop works too. Excel *on the web* cannot reach your PC, see
 [Limits](#limits)).
 
 ---
+
+## Sample output
+
+A read-only model audit produced by the companion `excel-model-audit` skill in the same
+toolkit, run against the demo model kept in this repository. Every figure below comes from
+that run. The files are in [`samples/audit-sample/`](samples/audit-sample/).
+
+| | |
+|---|---|
+| Risk score | **92/100** (grade D). Do not rely on this build |
+| Findings | 8 high, 3 medium, 3 low |
+| Quantified exposure | **121,041.08** in the model's own units |
+| Recomputation | 129/133 formulas (97.0%), 2 stale, 1 hidden error, 1 circular |
+
+- [`audit.md`](samples/audit-sample/audit.md), the workpaper with verdict, recomputation table, findings and limits
+- [`audit.html`](samples/audit-sample/audit.html), the same report, self-contained and filterable
+- [`audit.xlsx`](samples/audit-sample/audit.xlsx), the findings as a filterable Excel sheet
+- [`audit.json`](samples/audit-sample/audit.json), structured findings for a pipeline
+- [`Northwind FY26 P&L (demo).xlsx`](<samples/audit-sample/Northwind FY26 P&L (demo).xlsx>), the input workbook
+
+Three independent checks converge on the same defect in that model. The structural pass finds a
+total stopping one row early, the tie-out fails by exactly the missing line's value, and the
+impact prices it at 5,640.
 
 ## Quick start on Windows
 
@@ -51,11 +76,11 @@ on Windows (Mac desktop works too; Excel *on the web* cannot reach your PC — s
 4. Double-click `Start OpenCode for Excel.bat`.
 5. Keep the launcher window open while using the add-in.
 
-To clone the repository:
+To clone the repository, run the following.
 
 ```powershell
-git clone https://github.com/analystsandeep/Openclode-Excel-Addon.git
-cd Openclode-Excel-Addon
+git clone https://github.com/analystsandeep/opencode-excel-addon.git
+cd opencode-excel-addon
 ```
 
 The launcher installs dependencies, prepares the localhost certificate, registers the Office
@@ -65,7 +90,7 @@ manifest, creates a compatible starter workbook, starts the local bridge, and op
 
 | Requirement | Notes |
 |---|---|
-| Node.js 18+ | `node -v` — needed only to run the local bridge |
+| Node.js 18+ | `node -v`, needed only to run the local bridge |
 | Excel 2019 / 2021 / Microsoft 365 (desktop) | Manifest validates for "Excel 2019 or later on Windows" |
 | Microsoft Edge WebView2 Runtime | Pre-installed on Windows 11 and current Windows 10. If the pane renders blank on the Semi-Annual Enterprise channel, set `HKCU\Software\Microsoft\Office\16.0\WEF\Win32WebView2` (DWORD) to `1` |
 | OpenCode desktop app **or** `opencode service start` | v2 keeps a shared background service running on port **28894** (Windows) / 49374 (macOS, Linux) |
@@ -78,15 +103,15 @@ starts the bridge, sideloads the manifest and opens Excel with a small
 pane. `Remove from Excel.bat` takes it back out, and `Fix Certificates.bat` repairs the
 localhost certificate if Excel refuses to load the pane.
 
-From a terminal:
+From a terminal, run the following.
 
 ```powershell
-cd opencode-excel-addin
+cd opencode-excel-addon
 npm install
 npm run dev
 ```
 
-You should see:
+The output looks like this.
 
 ```
   Task pane : https://localhost:3000/taskpane.html
@@ -102,96 +127,96 @@ Leave this window open. It is the bridge between Excel and OpenCode.
 
 ## 3. Sideload the add-in
 
-In a **second** terminal (keep `npm run dev` running):
+In a second terminal, with `npm run dev` still running, run the following.
 
 ```powershell
 npm run sideload
 ```
 
 Then open the bundled `OpenCode for Excel.xlsx` starter workbook (the `.bat` does this
-automatically). The **OpenCode** button appears on the **Home** tab and the pane opens on
+automatically). The OpenCode button appears on the Home tab and the pane opens on
 the right. You can close the starter workbook and keep using the button in your own
-workbooks for the rest of the Excel session. To remove the add-in later:
+workbooks for the rest of the Excel session. To remove the add-in later, run
 `npm run unsideload`.
 
-> **Office 2021 (perpetual) note:** some volume builds ignore the `Wef\Developer` registry
+> Office 2021 (perpetual) note. Some volume builds ignore the `Wef\Developer` registry
 > entry on its own. Opening a workbook with a `webextension` reference (the bundled starter
 > workbook) is what makes Excel register the add-in commands for that session.
 
 ### Manual sideload (if the npm step is blocked)
 
 1. Copy `manifest.xml` into a folder, e.g. `C:\OpenCodeAddin`.
-2. In Excel, open **File > Options > Trust Center > Trust Center Settings > Trusted Add-in Catalogs**, add `C:\OpenCodeAddin` as the catalog URL, and select *Show in Menu*.
-3. Restart Excel, open **Insert > My Add-ins > Shared Folder**, select *OpenCode for Excel*, and choose **Add**.
+2. In Excel, open File > Options > Trust Center > Trust Center Settings > Trusted Add-in Catalogs, add `C:\OpenCodeAddin` as the catalog URL, and select *Show in Menu*.
+3. Restart Excel, open Insert > My Add-ins > Shared Folder, select *OpenCode for Excel*, and choose Add.
 
 > If Excel says *"We can't open this add-in from localhost"*, run `npx office-addin-dev-certs install`
-> and restart Excel; on locked-down networks also try:
+> and restart Excel. On locked-down networks, also run the loopback exemption below.
 > `CheckNetIsolation LoopbackExempt -a -n="microsoft.win32webviewhost_cw5n1h2txyewy"` from an elevated prompt.
 
 ## 4. Using it
 
-* **Ask anything** - type a question; the current selection plus bounded values and live formulas
+* Ask anything. Type a question. The current selection plus bounded values and live formulas
   from every non-empty tab are sent as context. The whole-workbook context means OpenCode can see
-  your tabs, tables, and formula logic, not just the selection. Use `@SheetName` to give one tab a
+  your tabs, tables and formula logic, not only the current selection. Use `@SheetName` to give one tab a
   larger context budget.
-* **Workbook context controls** - **Send workbook samples** in Settings controls the all-sheet
-  samples (names, used ranges, values, formulas). It is on by default; turning it off skips every
-  sheet read and sends no sheet data. The **selection checkbox** only adds or removes the selected
+* Workbook context controls. Send workbook samples in Settings controls the all-sheet
+  samples (names, used ranges, values, formulas). It is on by default. Turning it off skips every
+  sheet read and sends no sheet data. The selection checkbox only adds or removes the selected
   cells and does not turn workbook samples off. Both choices are remembered. Workbook and
-  selection context are each capped at 30,000 characters; long cells are clipped and the prompt
+  selection context are each capped at 30,000 characters. Long cells are clipped and the prompt
   notes when data was truncated.
-* **Read a specific range** - include `@range(Sheet1!A1:B20)` in your message, or use
+* Read a specific range. Include `@range(Sheet1!A1:B20)` in your message, or use
   `@range('Sales Data'!A1:B20)` for a quoted sheet name. The task pane reads the requested
   values and formulas and sends them with your prompt to OpenCode and its selected provider.
   Up to three finite ranges and 500 cells total are allowed, with a 12,000-character content
   limit. Requests exceeding a limit are rejected before the prompt is sent. This is an explicit
   user-directed read. Normal workbook samples may still be included even when the selection
-  checkbox is off. OpenCode can also return an exact range request; the pane shows the requested
-  sheets/ranges and requires **Approve read & continue** before reading and sending them. There
+  checkbox is off. OpenCode can also return an exact range request. The pane shows the requested
+  sheets/ranges and requires Approve read & continue before reading and sending them. There
   are at most two approved model-requested reads per user turn, each subject to the same caps.
-  A model may not reliably use this optional protocol; a declined request is not sent.
-* **Search and trace** - `@search("rent")` performs a literal case-insensitive values/formulas
-  search across used ranges (maximum 20 sheets and 5,000 cells); at most 50 matches, with
+  A model may not reliably use this optional protocol. A declined request is not sent.
+* Search and trace. `@search("rent")` performs a literal case-insensitive values/formulas
+  search across used ranges (maximum 20 sheets and 5,000 cells). At most 50 matches, with
   truncated cell text, are sent to OpenCode. An oversized workbook is rejected rather than
   searched partially. `@trace(Sheet1!C5)` traces in-workbook precedents and dependents. Add a
-  depth and direction, for example `@trace(Sheet1!C5, depth=3, mode=precedents)`; `mode` accepts
+  depth and direction, for example `@trace(Sheet1!C5, depth=3, mode=precedents)`. `mode` accepts
   `precedents`, `dependents`, or `both` (the default), and depth is clamped to 1-5. The pane
   prefers Excel's direct relation APIs and falls back to a bounded formula scan, reporting which
-  source was used. A trace is capped at 200 nodes and 50 relations per node; at most two traces
-  and 12,000 characters are sent per message. Precedents require ExcelApi 1.12, dependents 1.13;
-  unsupported hosts are reported. It does not traverse external workbooks or build a complete
+  source was used. A trace is capped at 200 nodes and 50 relations per node. At most two traces
+  and 12,000 characters are sent per message. Precedents require ExcelApi 1.12 and dependents
+  require 1.13. Unsupported hosts are reported. It does not traverse external workbooks or build a complete
   dependency graph.
-* **Recent-change context** - the eight most recent applies, restores, and native formats are
+* Recent-change context. The eight most recent applies, restores, and native formats are
   included as read-only context in later prompts, so follow-up requests can refer to what just
   changed without re-reading the whole workbook.
-* **Comments** - include bare `@comments` to read threaded comments from every sheet, or
+* Comments. Include bare `@comments` to read threaded comments from every sheet, or
   `@comments(Sheet1!A1:B20)` to limit the read to one finite range. The pane sends at most 50
   threads, clips each message to 500 characters, and labels the result as untrusted workbook
   data. Threaded comments require ExcelApi 1.10+ (Microsoft 365 or Excel for the web).
   The change-plan tools can also add, update, reply to, resolve, reopen, or delete comments with
   the `comments` operation.
-* **Conditional formatting and sheet views** - change plans support `conditionalFormat` for
+* Conditional formatting and sheet views. Change plans support `conditionalFormat` for
   cell-value, formula, color-scale, data-bar, and top/bottom rules, and can clear rules from a
   range. The `viewSettings` operation controls gridlines, headings, tab color, and sheet
   visibility. The native Format sheet action also adds data bars and a red negative-value rule.
-* **Standing instructions and formatting conventions** - the settings menu stores persistent
+* Standing instructions and formatting conventions. The settings menu stores persistent
   workbook instructions and formatting conventions in this browser. Both are sent with every
   prompt. Conventions such as `currency: EUR, decimals: 2, negatives: parentheses,
   date: dd/mm/yyyy` also drive the native Format sheet action's number formats.
-* **Change history** - each applied plan, restore, and native format run is recorded in the
+* Change history. Each applied plan, restore, and native format run is recorded in the
   settings menu and stored per workbook in IndexedDB (with an in-memory fallback when the host
-  blocks IndexedDB). Up to 30 checkpoints are kept; the newest eight cell snapshots remain
-  restorable after closing and reopening the task pane. Only cell-level snapshots are restorable:
-  **Restore cells** checks for later edits before writing. Native **Format sheet**, structural
-  edits, and object changes invalidate older restore snapshots; use Excel's Undo or a verified
+  blocks IndexedDB). Up to 30 checkpoints are kept. The newest eight cell snapshots remain
+  restorable after closing and reopening the task pane. Only cell-level snapshots are restorable.
+  Restore cells checks for later edits before writing. Native Format sheet, structural
+  edits, and object changes invalidate older restore snapshots. Use Excel's Undo or a verified
   backup for those.
-* **Chat sessions and commands** - each workbook keeps up to 20 local chat tabs, with transcripts
-  saved in this browser. Use **+**, **New chat**, or `/new` to start a session, click a tab to
+* Chat sessions and commands. Each workbook keeps up to 20 local chat tabs, with transcripts
+  saved in this browser. Use +, New chat, or `/new` to start a session, click a tab to
   switch, and close a tab without deleting the OpenCode session. Type `/` to open a filtered
   command palette (arrow keys move, Enter/Tab selects, Esc closes). `/compact` starts a fresh
   session with a bounded summary of the current conversation carried into the next prompt, and
   `/export` downloads the visible transcript as Markdown. Local commands do not send a model
-  prompt; `/format` and `/undo` perform workbook actions directly, while `/audit` and
+  prompt. `/format` and `/undo` perform workbook actions directly, while `/audit` and
   `/connections` read the local bridge.
 
   | Command | Purpose |
@@ -202,71 +227,71 @@ workbooks for the rest of the Excel session. To remove the add-in later:
   | `/tools`, `/skills`, `/connections`, `/audit` | Workbook tools, OpenCode agents/skills, MCP/app connections, audit log |
   | `/format`, `/undo`, `/stop`, `/attach` | Run Format sheet, undo the last cell change, stop the turn, attach files |
 
-* **Model** - the model selector lists every model your OpenCode app exposes. The choice is remembered
-  and applied to the next message; *Default* lets OpenCode pick.
-* **Agentic edits (change plans)** - when you ask OpenCode to change the workbook
+* Model. The model selector lists every model your OpenCode app exposes. The choice is remembered
+  and applied to the next message. The Default entry lets OpenCode pick.
+* Agentic edits (change plans). When you ask OpenCode to change the workbook
   (write cells or formulas, insert or delete rows/columns, add or rename sheets, format, add
-  charts), it replies with a **change plan** instead of plain text. The plan lists every
+  charts), it replies with a change plan instead of plain text. The plan lists every
   operation with the exact cells/tabs it touches, so you can review before anything is written.
-  Uncheck operations you don't want, then click **Apply checked changes**. A before-snapshot is
-  kept for cell writes and single-cell, cell-local formatting so you can click **Undo**
+  Uncheck operations you don't want, then click Apply checked changes. A before-snapshot is
+  kept for cell writes and single-cell, cell-local formatting so you can click Undo
   afterwards. Multi-cell formatting, borders, row heights, column widths, autofit, and
   structural/object operations are not add-in-undoable, so use Excel's own Undo or a backup for
   those.
-* **Cell review and drift checks** - for plans composed entirely of supported, bounded cell
+* Cell review and drift checks. For plans composed entirely of supported, bounded cell
   writes and single-cell, cell-local formatting, the pane shows up to 50 original/proposed cell
   contents and checks selected cells again before apply. If they changed, apply is blocked and
   the plan must be reviewed again. The add-in also compares supported cells against their
   post-apply state before Undo and blocks Undo if later edits are detected. These are
-  best-effort checks, **not atomic transactions**; changes can still occur between a check and
+  best-effort checks, not atomic transactions. Changes can still occur between a check and
   a write. Mixed, structural, unsupported and auto-applied operations do not have the same
   pre-apply review guard. Formula-fill previews display the seed, not calculated formulas.
   Edited JSON plans must be reviewed before applying.
-* **Post-write checks** - supported bounded writes are read back and compared with exact values
+* Post-write checks. Supported bounded writes are read back and compared with exact values
   or explicit A1 formulas. Excel error cells are flagged using their value type, not error-like
   strings. Relative fills, overlapping/multiple same-sheet operations, formatting and unsupported
-  plans remain unverified; this does not prove formula logic or calculated results are correct.
-* **Manual backup** - in plan review, **Prepare backup** requests a compressed workbook copy from
-  Office, capped at 50 MB, then provides a local download link. Availability varies by host;
-  Excel on the web/iPad may not support compressed output. No backup is sent to OpenCode and
-  there is no automatic restore. Open and verify the downloaded file and its extension/macros;
-  if unavailable use Excel Save a Copy or version history. The copy is not a transactional snapshot.
-* **Read-only mode** - the three-dot settings menu lets you ask questions and audit without any
+  plans remain unverified. This does not prove formula logic or calculated results are correct.
+* Manual backup. In plan review, Prepare backup requests a compressed workbook copy from
+  Office, capped at 50 MB, then provides a local download link. Availability varies by host, and
+  Excel on the web or iPad may not support compressed output. No backup is sent to OpenCode and
+  there is no automatic restore. Open and verify the downloaded file, its extension and its macros.
+  If a backup is unavailable, use Excel Save a Copy or version history. The copy is not a transactional snapshot.
+* Read-only mode. The three-dot settings menu lets you ask questions and audit without any
   workbook edits being possible (apply buttons are disabled).
-* **Approval gates** - use the three-dot settings menu to choose *Ask before every change* (default), *Auto-apply
+* Approval gates. Use the three-dot settings menu to choose *Ask before every change* (default), *Auto-apply
   safe formatting touching 5 or fewer cells*, or *Auto-apply safe formatting*. Destructive and
   structural operations are always unchecked and never auto-applied. Border, row-height,
   column-width, and autofit formatting always require review because they affect cells outside
   the reviewed range.
-* **Quick actions** - *Explain formula*, *Fix formula*, *Write formula*, *Clean this data*,
+* Quick actions. *Explain formula*, *Fix formula*, *Write formula*, *Clean this data*,
   *Summarize as table*, *Audit workbook*, *Variance analysis*, *Scenario tabs*, *Dashboard*,
   *New sheet*, *Web research*, *Write VBA*, *Pivot advice*.
-* **Attachments** - click **Attach** and add up to 20 files (25 MB each). Files stay in the
+* Attachments. Click Attach and add up to 20 files (25 MB each). Files stay in the
   locked local scratch workspace and use OpenCode V2's native attachment API, so capable models
   can inspect PDFs, images, Office files, spreadsheets, and text. Text is also included directly
   in the prompt as a compatibility fallback.
-* **Skills and connections** - the three-dot settings menu lists OpenCode Skills/playbooks and configured MCP/app
+* Skills and connections. The three-dot settings menu lists OpenCode Skills/playbooks and configured MCP/app
   connections. Connected tools remain governed by OpenCode's permissions.
-* **Format sheet** - styles the active sheet directly with Excel.js, without calling the model:
+* Format sheet. Styles the active sheet directly with Excel.js, without calling the model. It
   cleans headers, creates or restyles `tblSales`, adds a three-row summary strip, applies
   date/quantity/currency formats (including any saved formatting conventions), freezes the header,
   hides gridlines, sets landscape print area/titles and adds data bars plus a red negative-value
-  rule. Safe to click again — it reuses the existing table and does not duplicate the summary or
+  rule. Safe to click again, it reuses the existing table and does not duplicate the summary or
   conditional formats.
-* **Insert below** - writes the answer one row below your selection, with one line per row.
-* **Insert table** - appears when the reply contains a table; parses TSV, CSV, or pipe tables and writes them as a real block with autofit.
-* **Use as formula** - appears when the reply is a single line starting with `=`; writes it into the selected cell as a live formula.
-* **Copy** - copies the answer or an individual code block.
-* **Stop** - aborts the turn (`session.interrupt` or `abort`).
-* **New chat** - starts a fresh OpenCode session and adds a local chat tab. Earlier tabs remain
-  available until you close them; closing a tab does not delete the OpenCode session.
-* Enter sends; Shift+Enter adds a new line. Common actions also sit in the chip rail above the composer.
+* Insert below. Writes the answer one row below your selection, with one line per row.
+* Insert table. Appears when the reply contains a table. Parses TSV, CSV, or pipe tables and writes them as a real block with autofit.
+* Use as formula. Appears when the reply is a single line starting with `=`. Writes it into the selected cell as a live formula.
+* Copy. Copies the answer or an individual code block.
+* Stop. Aborts the turn (`session.interrupt` or `abort`).
+* New chat. Starts a fresh OpenCode session and adds a local chat tab. Earlier tabs remain
+  available until you close them. Closing a tab does not delete the OpenCode session.
+* Enter sends. Shift+Enter adds a new line. Common actions also sit in the chip rail above the composer.
 
 ## 5. Locking the agent down (important)
 
-OpenCode is a *coding* agent: by default it can run shell commands and edit files.
+OpenCode is a coding agent, and by default it can run shell commands and edit files.
 Sessions created by this add-in run in a scratch workspace
-(`%LOCALAPPDATA%\OpenCodeExcel\workspace`) that the bridge creates with:
+(`%LOCALAPPDATA%\OpenCodeExcel\workspace`) that the bridge creates with the configuration below.
 
 ```jsonc
 // %LOCALAPPDATA%\OpenCodeExcel\workspace\opencode.jsonc  (auto-created)
@@ -284,7 +309,7 @@ receives that token from the bridge's own HTML response, so no credential is com
 repository.
 
 Add a dedicated agent so the dropdown offers an Excel-tuned, read-only assistant.
-Paste this into `%USERPROFILE%\.config\opencode\opencode.jsonc`:
+Paste this into `%USERPROFILE%\.config\opencode\opencode.jsonc`.
 
 ```jsonc
 {
@@ -303,7 +328,7 @@ Paste this into `%USERPROFILE%\.config\opencode\opencode.jsonc`:
 }
 ```
 
-Then pick **excel** under *Agent* in the three-dot settings menu. Config reference: <https://opencode.ai/v2/docs/config/>.
+Then pick excel under *Agent* in the three-dot settings menu. The config reference is <https://opencode.ai/v2/docs/config/>.
 
 ## 6. Configuration
 
@@ -322,14 +347,14 @@ Then pick **excel** under *Agent* in the three-dot settings menu. Config referen
 | Approval gates | Three-dot settings menu, *Approval gates* | *Ask before every change* |
 | AI model | Composer model selector | OpenCode's session default |
 
-Discovery order: `OPENCODE_SERVICE_URL`, then `%USERPROFILE%\.local\state\opencode\service.json`
+The discovery order is `OPENCODE_SERVICE_URL`, then `%USERPROFILE%\.local\state\opencode\service.json`
 (registration written by the running service), then `%USERPROFILE%\.config\opencode\service.json`
-(service config: port, hostname, and password), then default ports `28894` and `49374`, and finally
+(service config holding port, hostname and password), then default ports `28894` and `49374`, and finally
 `opencode service status`.
 If OpenCode answers `401`, the bridge retries with the password from
 `opencode service get password`.
 
-**WSL / remote setups:** start the service reachable from Windows
+For WSL or remote setups, start the service reachable from Windows
 (`opencode serve --hostname 0.0.0.0 --port 4096` in WSL) and set
 `OPENCODE_SERVICE_URL=http://127.0.0.1:4096` plus `OPENCODE_SERVICE_PASSWORD=...`
 before `npm run dev`.
@@ -338,27 +363,27 @@ before `npm run dev`.
 
 | Symptom | Fix |
 |---|---|
-| Pane says *Not connected* | Is `npm run dev` running? In a terminal run `opencode service status`; start the OpenCode desktop app or `opencode service start` |
+| Pane says *Not connected* | Is `npm run dev` running? In a terminal run `opencode service status`. Start the OpenCode desktop app or `opencode service start` |
 | Status dot red, banner shows `401` | `opencode service get password`, then `set OPENCODE_SERVICE_PASSWORD=<value>` and restart the bridge |
 | *"We can't open this add-in from localhost"* | `npx office-addin-dev-certs install`, restart Excel (see the loopback command in §3) |
-| Yellow *"ADD-IN ERROR… only available during debugging from Visual Studio"* | Save your work and close **every** Excel window, then run `Start OpenCode for Excel.bat` again. The packaged starter workbook is kept in sync with `manifest.xml`, and the launcher also creates a repaired runtime copy whose embedded ID/version exactly matches the manifest; do not reopen an older starter workbook from Excel's Recent list. |
+| Yellow *"ADD-IN ERROR... only available during debugging from Visual Studio"* | Save your work and close every Excel window, then run `Start OpenCode for Excel.bat` again. The packaged starter workbook is kept in sync with `manifest.xml`, and the launcher also creates a repaired runtime copy whose embedded ID/version exactly matches the manifest. Do not reopen an older starter workbook from Excel's Recent list. |
 | Ribbon button missing | `npm run unsideload && npm run sideload`, then restart Excel |
 | Answer never finishes | Bridge falls back to polling after 45s of silence and finishes with what arrived. Check `%USERPROFILE%\.local\share\opencode\log\opencode.log` |
-| *Format sheet* says "The sheet formatter did not load" | Reload the pane (click **OpenCode** on the Home tab) or restart the launcher; the bridge must serve `/format.js` |
-| *Format sheet* leaves `#` in the summary | Click **Format sheet** again — it autofits the columns after writing the summary values |
+| *Format sheet* says "The sheet formatter did not load" | Reload the pane (click **OpenCode** on the Home tab) or restart the launcher. The bridge must serve `/format.js` |
+| *Format sheet* leaves `#` in the summary | Click **Format sheet** again, it autofits the columns after writing the summary values |
 | Reply says `Model is unavailable`, `Upstream request failed`, or no reply was returned | The pane automatically retries the same turn once with an available zero-cost `opencode/*-free` model, updates the visible model selector, and explains the switch in a banner. It never auto-selects models from potentially paid providers. If no safe fallback is available, choose a model manually from the composer. |
-| *"OpenCode asked to use a tool"* banner | The agent tried a tool; confirm the deny rules in §5 are in place |
+| *"OpenCode asked to use a tool"* banner | The agent tried a tool. Confirm the deny rules in §5 are in place |
 | Bridge log says no service | Set `OPENCODE_SERVICE_URL` to the exact URL shown by `opencode service status` |
 
 ## 8. Limits
 
-* **Excel on the web** cannot reach `127.0.0.1` (Local Network Access + mixed content block it). Desktop only, unless you expose the bridge through a tunnel.
-* Replies of tables rely on the model returning a ```tsv / ```csv block — the quick actions ask for exactly that.
-* `GET /api/event` in OpenCode v2 is volatile (no replay, may close mid-turn); the bridge reconnects and also polls `session/.../message`, so text and completion survive.
+* Excel on the web cannot reach `127.0.0.1` (Local Network Access + mixed content block it). Desktop only, unless you expose the bridge through a tunnel.
+* Replies of tables rely on the model returning a ```tsv / ```csv block, the quick actions ask for exactly that.
+* `GET /api/event` in OpenCode v2 is volatile (no replay, may close mid-turn). The bridge reconnects and also polls `session/.../message`, so text and completion survive.
 * Long selections are truncated to the *Max selected cells sent* setting, and their values are
   loaded only after the cap is applied. Workbook and selection context are each bounded at 30,000
   characters, so use `@SheetName` to give a very large tab a larger sample budget. Turn off
-  **Send workbook samples** to send no sheet data at all.
+  Send workbook samples to send no sheet data at all.
 * Native attachment understanding depends on the selected provider/model's supported media types.
 
 ## 9. Files
@@ -382,20 +407,21 @@ tools/start.mjs         The launcher behind the .bat files (plain-English output
 tools/test-lib.mjs      Unit tests for src/lib.js
 tools/test-format.mjs   Formatter tests against a fake Excel object model
 tools/test-pane.mjs     Pane integration tests (fake Excel + real bridge + mock OpenCode)
+samples/audit-sample/   Demo audit output: report in four formats plus the input workbook
 ```
 
 ### How the agentic edit flow works
 
-OpenCode is a coding agent, so it cannot reach into Excel directly — the task pane does. When you
-ask for a workbook change, OpenCode replies with a JSON **change plan**. The executor supports cell
+OpenCode is a coding agent, so it cannot reach into Excel directly, the task pane does. When you
+ask for a workbook change, OpenCode replies with a JSON change plan. The executor supports cell
 values and formulas (including R1C1 fills), clearing, rows/columns, sheets, rich formatting,
 autofit, merge/unmerge, tables, sorting, charts, and freeze panes. Every range operation must name
 the exact sheet and range it touches.
 
-1. **Review** — the pane renders the plan as a change preview with cell-level references. Destructive operations (overwrites, deletes, inserts that shift data, merges, sorts) are unchecked by default and are never auto-applied.
-2. **Approve** — check the operations you want and click **Apply checked changes**. The pane snapshots bounded before-values for cell-only operations, then applies the operations through Office.js.
-3. **Audit** - every prompt, plan and apply is appended to `workspace/audit.log` and can be viewed from the settings menu.
-4. **Undo** — **Undo** restores cell values and formulas, plus the cell-local formatting of a single-cell `formatRange`. It does not restore multi-cell formatting, borders, row heights, column widths, autofit, or structural/object changes; use Excel's Ctrl+Z or restore a backup for those. Native **Format sheet** discards older add-in snapshots because it can insert rows and shift cells.
+1. Review, the pane renders the plan as a change preview with cell-level references. Destructive operations (overwrites, deletes, inserts that shift data, merges, sorts) are unchecked by default and are never auto-applied.
+2. Approve, check the operations you want and click Apply checked changes. The pane snapshots bounded before-values for cell-only operations, then applies the operations through Office.js.
+3. Audit. Every prompt, plan and apply is appended to `workspace/audit.log` and can be viewed from the settings menu.
+4. Undo, Undo restores cell values and formulas, plus the cell-local formatting of a single-cell `formatRange`. It does not restore multi-cell formatting, borders, row heights, column widths, autofit, or structural/object changes. Use Excel's Ctrl+Z or restore a backup for those. Native Format sheet discards older add-in snapshots because it can insert rows and shift cells.
 
 ## 10. Verifying without OpenCode
 
@@ -412,14 +438,20 @@ npm run test:e2e    # curl-driven end-to-end script
 `test:format` runs the real `src/format.js` against a fake Excel object model and checks the
 table range, summary formulas, number formats, freeze/print settings, conditional formatting,
 the array-formula clear, autofit, and a second idempotent run. `test:pane` runs the actual pane
-code and asserts, among other things, that **Format sheet** calls the native formatter (not the
+code and asserts, among other things, that Format sheet calls the native formatter (not the
 model), that `Insert table` writes the parsed 4×2 block at A22, and that `Use as formula`
-writes the formula into the selected cell. See **TEST-REPORT.md** for what is covered, the bugs
+writes the formula into the selected cell. See TEST-REPORT.md for what is covered, the bugs
 testing caught, and what still needs a real Excel to confirm.
 
 ## 11. Where to take it next
 
-* **Custom functions**: `=OPENCODE("explain A1")` via a SharedRuntime (async, so results arrive a turn later).
-* **Ribbon actions** for one-click "Explain selection" / "Clean selection".
-* **Prompt library**: ship your team's recurring analyses as quick-action chips.
-* **Deployment**: publish the pane to a static site and swap `SourceLocation` to HTTPS; keep the bridge as a per-machine tray service (AppSource certification is the hurdle for listing publicly).
+* Custom functions, so `=OPENCODE("explain A1")` runs through a SharedRuntime. The call is async, so results arrive a turn later.
+* Ribbon actions for one-click "Explain selection" / "Clean selection".
+* Prompt library, so your team's recurring analyses ship as quick-action chips.
+* Deployment, publishing the pane to a static site and swapping `SourceLocation` to HTTPS, with the bridge kept as a per-machine tray service. AppSource certification is the hurdle for listing publicly.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE).
+
+Copyright (c) 2026 OpenCode for Excel contributors.

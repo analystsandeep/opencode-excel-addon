@@ -1,7 +1,8 @@
 {
-  "name": "opencode-excel-addin",
+  "name": "opencode-excel-addon",
   "version": "1.2.0",
   "private": true,
+  "license": "MIT",
   "description": "OpenCode Excel add-in for workbook analysis, formulas, dashboards, and reviewable Office.js automation",
   "keywords": [
     "opencode",
@@ -14,13 +15,13 @@
     "data-analysis",
     "excel-formulas"
   ],
-  "homepage": "https://github.com/analystsandeep/Openclode-Excel-Addon#readme",
+  "homepage": "https://github.com/analystsandeep/opencode-excel-addon#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/analystsandeep/Openclode-Excel-Addon.git"
+    "url": "git+https://github.com/analystsandeep/opencode-excel-addon.git"
   },
   "bugs": {
-    "url": "https://github.com/analystsandeep/Openclode-Excel-Addon/issues"
+    "url": "https://github.com/analystsandeep/opencode-excel-addon/issues"
   },
   "scripts": {
     "dev": "node bridge/server.mjs",

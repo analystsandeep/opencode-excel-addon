@@ -1,0 +1,482 @@
+{
+  "tool": "Excel Model Audit",
+  "version": "2.2.0",
+  "exposure": 121041.08,
+  "recalc": {
+    "formulas": 133,
+    "compared": 129,
+    "coverage": 0.9699,
+    "stale": 2,
+    "hidden_errors": 1,
+    "circular": 1,
+    "volatile": 1,
+    "unsupported": {
+      "[external workbook]": 1
+    },
+    "let_bindings": 0,
+    "lambda_calls": 0,
+    "lambda_recursion_hits": 0
+  },
+  "policy": "Northwind review standard v1",
+  "generated": "2026-11-10 10:04 UTC",
+  "workbook": "Northwind FY26 P&L (demo).xlsx",
+  "workbook_bytes": 9015,
+  "date_system": "1900",
+  "stats": {
+    "sheets": 3,
+    "cells": 221,
+    "formulas": 133
+  },
+  "risk": {
+    "score": 92,
+    "grade": "D",
+    "label": "Do not rely on this build",
+    "by_severity": {
+      "high": 8,
+      "medium": 3,
+      "low": 3,
+      "info": 1
+    }
+  },
+  "sheets": [
+    {
+      "name": "P&L",
+      "state": "visible",
+      "range": "A1:M33",
+      "cells": 186,
+      "formulas": 133,
+      "inputs": 18
+    },
+    {
+      "name": "Inputs",
+      "state": "visible",
+      "range": "A1:B9",
+      "cells": 14,
+      "formulas": 0,
+      "inputs": 6
+    },
+    {
+      "name": "Old workings",
+      "state": "hidden",
+      "range": "A1:B11",
+      "cells": 21,
+      "formulas": 0,
+      "inputs": 10
+    }
+  ],
+  "external_links": [
+    "Prior year P&L.xlsx"
+  ],
+  "defined_names": 1,
+  "findings": [
+    {
+      "check": "broken_name",
+      "severity": "high",
+      "title": "Defined name points at a deleted range",
+      "sheet": null,
+      "cells": [
+        "PriorYearTotal"
+      ],
+      "detail": "Name 'PriorYearTotal' refers to #REF!.",
+      "why": "Any formula using this name is now pointing at nothing, and the failure can be masked by a cached value that still looks correct.",
+      "fix": "Re-point 'PriorYearTotal' at the intended range or delete it, then search for its uses and correct them.",
+      "evidence": {
+        "name": "PriorYearTotal",
+        "refers_to": "#REF!"
+      },
+      "impact": null
+    },
+    {
+      "check": "circular_reference",
+      "severity": "high",
+      "title": "Circular reference (1 loop)",
+      "sheet": null,
+      "cells": [
+        "P&L!G33",
+        "P&L!H33"
+      ],
+      "detail": "P&L!G33\nP&L!H33\nP&L!G33",
+      "why": "A circular reference means the figure depends on itself. Excel resolves it iteratively, so the value drifts with every recalculation and is not reproducible from the inputs.",
+      "fix": "Break the loop. Identify the cell that should be an input rather than a calculation, and replace one leg of the cycle with a typed assumption placed outside the loop.",
+      "evidence": {
+        "loops": [
+          [
+            "P&L!G33",
+            "P&L!H33",
+            "P&L!G33"
+          ]
+        ]
+      },
+      "impact": null
+    },
+    {
+      "check": "external_links",
+      "severity": "high",
+      "title": "Workbook depends on another file",
+      "sheet": null,
+      "cells": [
+        "B25"
+      ],
+      "detail": "References point outside this workbook. The files are Prior year P&L.xlsx.",
+      "why": "External links break silently. The recipient sees stale cached values, and any figure that came from the other file is no longer verifiable from this one.",
+      "fix": "Break the links. Paste the required values as labelled inputs on a source sheet, or rebuild the reference inside the workbook. Then check that no formula still contains a bracketed file name.",
+      "evidence": {
+        "links": [
+          "Prior year P&L.xlsx"
+        ]
+      },
+      "impact": null
+    },
+    {
+      "check": "tie_out",
+      "severity": "high",
+      "title": "Tie-out fails for Total revenue equals the sum of every product line",
+      "sheet": null,
+      "cells": [],
+      "detail": "'P&L'!B9-SUM('P&L'!B5:B8) evaluates to -404.00 against a tolerance of 0.50, so it is out by 404.00.",
+      "why": "Reconciliations exist because these two figures are supposed to agree. When they do not, at least one of them is wrong.",
+      "fix": "Trace both sides to their inputs and correct the one that is incomplete. Re-run after the fix.",
+      "evidence": {
+        "expression": "'P&L'!B9-SUM('P&L'!B5:B8)",
+        "value": -404.0,
+        "tolerance": 0.5
+      },
+      "impact": 404.0
+    },
+    {
+      "check": "hardcoded_in_run",
+      "severity": "high",
+      "title": "Typed value inside a calculated row",
+      "sheet": "P&L",
+      "cells": [
+        "H16"
+      ],
+      "detail": "Row 16 is calculated across B16:M16 but these cells hold typed numbers, starting with H16=12500. The pattern at B16 would give H16 = 492.55, so the typed value is off by +12,007.45.",
+      "why": "A hardcoded number inside a calculated row is the most common way a model quietly stops tying. It survives every future update because nothing recalculates it.",
+      "fix": "Replace each typed value with the formula its neighbours use, or move the assumption to an input sheet and reference it so the override is visible and labelled.",
+      "evidence": {
+        "row": 16,
+        "values": {
+          "H16": 12500
+        }
+      },
+      "impact": 12007.453427681787
+    },
+    {
+      "check": "hidden_error",
+      "severity": "high",
+      "title": "Cell shows a value but the formula resolves to an error",
+      "sheet": "P&L",
+      "cells": [
+        "B23"
+      ],
+      "detail": "1 cell(s) carry a stored number while the formula evaluates to an error. For example, P&L!B23 stores 1370 but ='Old workings v0'!B2 resolves to #REF!.",
+      "why": "The reader sees a plausible number. The moment anyone recalculates, or links to the cell from another model, it becomes an error or a blank. This is the most dangerous class of defect in a workbook that is about to be circulated.",
+      "fix": "Correct the formula at its source, then recompute and confirm the cell now shows the intended figure.",
+      "evidence": {
+        "cells": [
+          "P&L!B23"
+        ],
+        "count": 1
+      },
+      "impact": null
+    },
+    {
+      "check": "stale_cache",
+      "severity": "high",
+      "title": "Stored result does not match the formula",
+      "sheet": "P&L",
+      "cells": [
+        "B12",
+        "C19"
+      ],
+      "detail": "2 cell(s) hold a cached value that disagrees with a recomputation of the formula. For example, P&L!B12 shows 99999 but =B9-B11 evaluates to 2175.0 (difference -97,824.00).",
+      "why": "The number on the page is not the number the formula produces. This happens when a file is written by a script or another tool, when a workbook is edited outside Excel, or when a calculation was interrupted. Every reader trusts the cached value, so the error travels silently.",
+      "fix": "Recompute in Excel (F9), save, and re-run. If the recomputation changes a figure you have already reported, treat the cached value as wrong and trace what changed.",
+      "evidence": {
+        "cells": [
+          "P&L!B12",
+          "P&L!C19"
+        ],
+        "count": 2,
+        "worst_delta": -97824.0
+      },
+      "impact": 102989.625
+    },
+    {
+      "check": "sum_coverage",
+      "severity": "high",
+      "title": "Total excludes the row or column next to its range",
+      "sheet": "P&L",
+      "cells": [
+        "B9",
+        "C9",
+        "D9",
+        "E9",
+        "F9",
+        "G9",
+        "B8",
+        "C8",
+        "D8",
+        "E8",
+        "F8",
+        "G8"
+      ],
+      "detail": "12 total cells in row 9 sum B5:B7 but the row directly outside the range (B8:M8) holds a value of 404 and is otherwise part of the same block. The totals affected are B9, C9, D9, E9, F9, G9 (+6 more). The excluded values sum to 5,640.00.",
+      "why": "The classic broken model. A line is added after the total was built, the SUM range does not grow, and the figure is understated with no visible error. Nothing on the page looks wrong.",
+      "fix": "Confirm the block is meant to include it, then extend each total along its own axis, from B5:B7 to B5:B8 (for example B9 changes from =SUM(B5:B7) to =SUM(B5:B8)), or delete the orphan row if it should not be there.",
+      "evidence": {
+        "totals": [
+          "B9",
+          "C9",
+          "D9",
+          "E9",
+          "F9",
+          "G9",
+          "H9",
+          "I9",
+          "J9",
+          "K9",
+          "L9",
+          "M9"
+        ],
+        "missed": [
+          "B8",
+          "C8",
+          "D8",
+          "E8",
+          "F8",
+          "G8",
+          "H8",
+          "I8",
+          "J8",
+          "K8",
+          "L8",
+          "M8"
+        ],
+        "ranges": [
+          "B5:B7",
+          "C5:C7",
+          "D5:D7",
+          "E5:E7",
+          "F5:F7",
+          "G5:G7",
+          "H5:H7",
+          "I5:I7",
+          "J5:J7",
+          "K5:K7",
+          "L5:L7",
+          "M5:M7"
+        ],
+        "missing_total": 5640.0
+      },
+      "impact": 5640.0
+    },
+    {
+      "check": "hidden_sheets",
+      "severity": "medium",
+      "title": "Hidden sheets carry content (1)",
+      "sheet": null,
+      "cells": [
+        "Old workings"
+      ],
+      "detail": "Not visible in the workbook tabs. They are Old workings.",
+      "why": "A sheet the reader cannot see is a place where inputs, workings or stale calculations survive review. Reviewers routinely miss them.",
+      "fix": "Unhide each sheet, decide whether it is load-bearing, and either label it as workings or delete it.",
+      "evidence": {
+        "sheets": [
+          "Old workings"
+        ]
+      },
+      "impact": null
+    },
+    {
+      "check": "format_mixing",
+      "severity": "medium",
+      "title": "Same block displayed as both percent and decimal",
+      "sheet": "P&L",
+      "cells": [
+        "I21"
+      ],
+      "detail": "Row 21 holds 12 numbers, 11 formatted as percent and 1 as plain number. The ambiguous cells are I21. For example I21 displays as a plain 0.25.",
+      "why": "A cell showing 0.07 and a cell showing 7% read as different magnitudes even when they hold the same number. In a margin or growth block that is how an order-of-magnitude error survives review.",
+      "fix": "Apply one convention to the whole row, then re-check the dependent rows still foot after the change.",
+      "evidence": {
+        "axis": "row",
+        "index": 21,
+        "modal": "percent"
+      },
+      "impact": null
+    },
+    {
+      "check": "pattern_deviation",
+      "severity": "medium",
+      "title": "Formula does not follow its row pattern",
+      "sheet": "P&L",
+      "cells": [
+        "J5"
+      ],
+      "detail": "J5 differs from the pattern used by 10 other cells on the same row 5. The pattern is =B5*1.03, as at C5. The deviation is J5 =I5+0.03.",
+      "why": "Fill-across models rely on every cell in a period row being the same formula shifted. A deviation is either a deliberate exception that should be labelled or a copy-paste slip that will not survive the next roll-forward.",
+      "fix": "Compare each listed formula with the pattern next to it and either restore the pattern or add a note explaining the exception.",
+      "evidence": {
+        "axis": "row",
+        "index": 5,
+        "pattern": "B5*1.03"
+      },
+      "impact": null
+    },
+    {
+      "check": "no_cached_results",
+      "severity": "low",
+      "title": "Formulas have no stored results",
+      "sheet": null,
+      "cells": [
+        "P&L!B25",
+        "P&L!B27",
+        "P&L!G33",
+        "P&L!H33"
+      ],
+      "detail": "4 formula cells carry no cached value, e.g. P&L!B25, P&L!B27, P&L!G33, P&L!H33.",
+      "why": "The workbook has not been recalculated since it was last written by a tool or script. Any figures another system reads from it may be blank or stale, and no formula audit alone can confirm the expected result.",
+      "fix": "Open the workbook in Excel, let it calculate fully, save, and re-run this audit so the check can compare formula and result.",
+      "evidence": {
+        "count": 4
+      },
+      "impact": null
+    },
+    {
+      "check": "hidden_rows_cols",
+      "severity": "low",
+      "title": "Hidden rows or columns inside the used range",
+      "sheet": "P&L",
+      "cells": [
+        "A28",
+        "A29"
+      ],
+      "detail": "2 hidden row(s) (28, 29) and 0 hidden column(s).",
+      "why": "Hidden rows and columns inside a data block are the standard way a period or entity is excluded from a total without anyone noticing.",
+      "fix": "Unhide and review each one, or delete it. If a column is hidden only for presentation, move it out of the data block.",
+      "evidence": {
+        "rows": [
+          28,
+          29
+        ],
+        "cols": []
+      },
+      "impact": null
+    },
+    {
+      "check": "volatile_function",
+      "severity": "low",
+      "title": "NOW() used 1 time",
+      "sheet": "P&L",
+      "cells": [
+        "B27"
+      ],
+      "detail": "NOW() appears in B27.",
+      "why": "NOW is volatile and changes every time the file recalculates. In an audit trail that means the reported figure cannot be reproduced from the file alone.",
+      "fix": "Replace with a fixed input or a non-volatile equivalent where possible, and document the assumption date where it cannot be avoided.",
+      "evidence": {
+        "function": "NOW",
+        "count": 1
+      },
+      "impact": null
+    }
+  ],
+  "checks_run": [
+    "stale_cache",
+    "hidden_error",
+    "circular_reference",
+    "tie_out",
+    "engine_coverage",
+    "error_values",
+    "hardcoded_in_run",
+    "pattern_deviation",
+    "sum_coverage",
+    "external_links",
+    "volatile_function",
+    "hidden_sheets",
+    "hidden_rows_cols",
+    "format_mixing",
+    "broken_name",
+    "long_formula",
+    "merged_data",
+    "no_cached_results"
+  ],
+  "checks_run_detail": [
+    [
+      "stale_cache",
+      "Stored results that disagree with a recomputation"
+    ],
+    [
+      "hidden_error",
+      "Cells showing a value while the formula resolves to an error"
+    ],
+    [
+      "circular_reference",
+      "Circular references, found by the calculation engine"
+    ],
+    [
+      "tie_out",
+      "Buyer-defined reconciliation expressions from policy.json"
+    ],
+    [
+      "engine_coverage",
+      "How much of the workbook the engine could recompute"
+    ],
+    [
+      "error_values",
+      "Formula errors such as #REF!, #DIV/0!, #VALUE! and #N/A"
+    ],
+    [
+      "hardcoded_in_run",
+      "Typed values sitting inside calculated rows and columns"
+    ],
+    [
+      "pattern_deviation",
+      "Cells whose formula breaks the row or column fill pattern"
+    ],
+    [
+      "sum_coverage",
+      "Totals whose range stops short of the block they total"
+    ],
+    [
+      "external_links",
+      "References to another workbook file"
+    ],
+    [
+      "volatile_function",
+      "Volatile functions (NOW, RAND, OFFSET, INDIRECT)"
+    ],
+    [
+      "hidden_sheets",
+      "Hidden and very-hidden sheets"
+    ],
+    [
+      "hidden_rows_cols",
+      "Hidden rows and columns inside the used range"
+    ],
+    [
+      "format_mixing",
+      "Percent and decimal formatting mixed in one column"
+    ],
+    [
+      "broken_name",
+      "Defined names pointing at deleted ranges or missing sheets"
+    ],
+    [
+      "long_formula",
+      "Over-long formulas and deeply nested IF logic"
+    ],
+    [
+      "merged_data",
+      "Merged cells covering populated ranges"
+    ],
+    [
+      "no_cached_results",
+      "Formula cells with no stored result"
+    ]
+  ],
+  "mode": "read-only"
+}
